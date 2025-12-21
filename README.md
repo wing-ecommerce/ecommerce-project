@@ -9,3 +9,5 @@ How to start the project
 3. run the project
    
 -> `npm run dev`
+
+## Note: checkout to your branch before working on the project

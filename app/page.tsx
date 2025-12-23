@@ -1,12 +1,95 @@
+import Image from "next/image";
+import heroImg from "./image/hero.png";
+import productImg from "./image/product.png";
+
 export default function HomePage() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-4xl font-bold text-gray-900 mb-4">
-        Welcome to MyApp
-      </h1>
-      <p className="text-lg text-gray-600">
-        This is the home page. Navigate using the navbar above.
-      </p>
-    </div>
+    <section className="relative bg-linear-to-br from-purple-50 via-white to-green-50">
+      <div className="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+        
+        {/* LEFT CONTENT */}
+        <div>
+          <span className="inline-block bg-purple-100 text-purple-600 text-sm px-4 py-1 rounded-full mb-6">
+            Create your own
+          </span>
+
+          <h1 className="text-5xl font-extrabold leading-tight mb-6">
+            Make the most <br />
+            of{" "}
+            <span className="relative inline-block">
+              printing
+              <span className="absolute -bottom-2 left-0 w-full h-1 bg-green-400 rounded-full"></span>
+            </span>
+          </h1>
+
+          <p className="text-gray-500 max-w-md mb-8">
+            What’s more, we do it right! A full administration printing background.
+            Print shirts for yourself or your online business.
+          </p>
+
+          {/* Buttons */}
+          <div className="flex items-center gap-6 mb-10">
+            <button className="bg-green-500 text-white px-6 py-3 rounded-full font-medium hover:bg-green-600 transition">
+              Shop Now →
+            </button>
+
+            <button className="flex items-center gap-2 text-gray-800 font-medium">
+              <span className="w-10 h-10 flex items-center justify-center border rounded-full">
+                ▶
+              </span>
+              How We Work
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="flex gap-12">
+            <div>
+              <p className="text-3xl font-bold">4k+</p>
+              <p className="text-sm text-gray-500">Collections</p>
+            </div>
+
+            <div>
+              <p className="text-3xl font-bold">9k+</p>
+              <p className="text-sm text-gray-500">
+                items trusted to deliver
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT IMAGE */}
+        <div className="relative flex justify-center">
+          {/* Background Circle */}
+          <div className="absolute w-[420px] h-[420px] bg-purple-200 rounded-full -z-10"></div>
+
+          {/* Hero Image */}
+          <Image
+            src={heroImg}
+            alt="Hero"
+            className="w-full max-h-[520px] object-contain"
+            priority
+          />
+
+          {/* Product Card */}
+          <div className="absolute bottom-20 -left-6 bg-white rounded-xl shadow-lg p-4 w-40">
+            <Image
+              src={productImg}
+              alt="Product"
+              className="rounded-md mb-2"
+            />
+            <p className="text-sm font-medium">Adult Quality Tee</p>
+            <p className="text-green-500 font-semibold">$29.00</p>
+          </div>
+
+          {/* Badge */}
+          <div className="absolute right-0 top-32 bg-gradient-to-br from-pink-500 to-purple-500 text-white w-20 h-20 rounded-full flex flex-col items-center justify-center text-sm font-semibold shadow-lg">
+            <span>3000+</span>
+            <span className="text-xs font-normal">Products</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+    
   );
 }

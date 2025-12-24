@@ -1,11 +1,85 @@
 import Image from "next/image";
 import heroImg from "./image/hero.png";
 import productImg from "./image/product.png";
+import ProductSection from "../components/ProductSection";
+import { Product } from "../components/Product";
+import IdeaImg from "./image/idea.png";
 
+import p1 from "./image/p1.avif";
+import p2 from "./image/p2.jpg";
+import p3 from "./image/p3.webp";
+import p4 from "./image/p4.jpg";
+import p5 from "./image/p5.jpg";
+import p6 from "./image/p6.webp";
+import p7 from "./image/p7.jpg";
+import p8 from "./image/p8.avif";
+
+const product1: Product[] = [
+  {
+    id: 1,
+    title: "Premium Crewneck Sweatshirt",
+    price: "$29.00",
+    image: p1,
+    badge: "sell",
+  },
+  {
+    id: 2,
+    title: "Midweight Cotton Tee",
+    price: "$26.00",
+    image: p2,
+    badge: "new",
+  },
+  {
+    id: 3,
+    title: "Youth Short Sleeve Tee",
+    price: "$26.00",
+    image: p3,
+    badge: "hot",
+  },
+  {
+  id: 4,
+    title: "Fine Jersey Tee",
+    price: "$31.00",
+    image: p4,
+    badge: "new"
+  }
+
+];
+const product2: Product[] = [
+  {
+    id: 1,
+    title: "Premium Crewneck Sweatshirt",
+    price: "$21.00",
+    image: p5,
+    badge: "hot",
+  },
+  {
+    id: 2,
+    title: "Midweight Cotton Tee",
+    price: "$26.00",
+    image: p6,
+    badge: "new",
+  },
+  {
+    id: 3,
+    title: "Youth Short Sleeve Tee",
+    price: "$26.00",
+    image: p7,
+    badge: "new",
+  },
+  {
+    id: 4,
+    title: "Fine Jersey Tee",
+    price: "$31.00",
+    image: p8,
+    badge: "sell",
+  },
+];
 export default function HomePage() {
   return (
-    <section className="relative bg-linear-to-br from-purple-50 via-white to-green-50">
-      <div className="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+    <>
+     <section className="relative bg-linear-to-br from-purple-200 via-white to-green-100">
+      <div className="max-w-12xl mx-auto px-30 py-30 grid lg:grid-cols-2 gap-12 items-center">
         
         {/* LEFT CONTENT */}
         <div>
@@ -90,6 +164,46 @@ export default function HomePage() {
 
       </div>
     </section>
+
+    <ProductSection title="Our picks for you" products={product1} />
+      <ProductSection title="Best Seller" products={product2} />
+      {/* CTA SECTION */}
+<section className="relative overflow-hidden py-24">
+  <div className="absolute inset-0 bg-gradient-to-r from-green-50 via-white to-purple-50 -z-10" />
+
+  <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
     
+    {/* LEFT – Illustration */}
+    <div className="relative flex justify-center">
+      <div className="absolute -left-10 -top-10 w-72 h-72 bg-purple-100 rounded-3xl -z-10" />
+      
+      <Image
+        src={IdeaImg}
+        alt="Design preview"
+        className="rounded-2xl shadow-xl"
+      />
+    </div>
+
+    {/* RIGHT – Content */}
+    <div>
+      <h2 className="text-4xl font-bold mb-6">
+        Free and easy way to <br />
+        bring your ideas to life
+      </h2>
+
+      <p className="text-gray-500 max-w-md mb-8">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Quisque convallis consequat.
+      </p>
+
+      <button className="bg-green-500 text-white px-6 py-3 rounded-full font-medium hover:bg-green-600 transition">
+        Get Started
+      </button>
+    </div>
+
+  </div>
+</section>
+
+    </>
   );
 }

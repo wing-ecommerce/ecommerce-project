@@ -13,7 +13,7 @@ import p5 from "./image/p5.jpg";
 import p6 from "./image/p6.webp";
 import p7 from "./image/p7.jpg";
 import p8 from "./image/p8.avif";
-
+import Footer from "@/components/layout/Footer";
 const product1: Product[] = [
   {
     id: 1,
@@ -203,7 +203,7 @@ export default function HomePage() {
 
   </div>
 </section>
-
+ <Footer/>
     </>
   );
 }

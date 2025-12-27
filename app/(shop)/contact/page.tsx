@@ -11,7 +11,7 @@ export default function ContactPage() {
         {/* Subtle Elegant Background Image */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1557682257-2f9c36a3a3bf?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+            src="https://i.pinimg.com/736x/21/28/1b/21281b4fbe857d8d54c8a2fa08d4f0e0.jpg"
             alt="Soft green abstract background"
             className="w-full h-full object-cover opacity-20"
           />

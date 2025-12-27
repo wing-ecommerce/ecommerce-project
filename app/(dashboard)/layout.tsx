@@ -1,12 +1,16 @@
-import React from 'react'
-import Admin from './admin/page'
+import Sidebar from "@/components/Sidebar";
 
-const layout = () => {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <Admin />
+    <div className="flex min-h-screen bg-gray-100">
+      <Sidebar />
+      <main className="flex-1 p-8">
+        {children}
+      </main>
     </div>
-  )
+  );
 }
-
-export default layout

@@ -1,5 +1,6 @@
 'use client';
 import HeroSection from "../../components/home/HeroSection";
+import HeroSection_test from "../../components/home/HeroSection_test";
 import BestSellingSection from "../../components/home/BestSelling";
 import CTASection from "../../components/home/CTASection";
 import LoadingSection from "../../components/home/LoadingSection";
@@ -17,7 +18,6 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      
       {loading ? (
         <LoadingSection />
       ) : (

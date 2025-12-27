@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ShoppingCart, MapPin, Phone, ArrowLeft } from 'lucide-react';
-
+import { useRouter } from "next/navigation";
 // Mock KHQR Payment Component
 const MockKHQRPayment = ({ amount }: { amount: number }) => {
   const khqrPayload = `
@@ -100,7 +100,7 @@ const CheckoutPage = () => {
     console.log('Proceeding to payment:', formData);
     setShowPayment(true);
   };
-
+const router = useRouter();
   if (showPayment) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-green-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -165,6 +165,13 @@ const CheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-green-50 py-8 px-4 sm:px-6 lg:px-8">
+     <button
+            onClick={() => router.push("/products")}
+            className="flex items-center gap-2 text-gray-600 hover:text-purple-600 mb-6 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="font-semibold">Back to Products</span>
+          </button>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
 import CartSidebar from '../cart/CartSideBar';
+import SignInModal from '../ui/SignInModal';
 
 const Navbar = () => {
   const pathname = usePathname();
@@ -28,6 +29,7 @@ const Navbar = () => {
       console.log('Searching for:', searchQuery);
     }
   };
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
 
   return (
     <>
@@ -52,11 +54,10 @@ const Navbar = () => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-semibold transition-all hover:text-green-500 relative ${
-                    pathname === link.href
-                      ? 'text-green-500'
-                      : 'text-gray-700'
-                  }`}
+                  className={`text-sm font-semibold transition-all hover:text-green-500 relative ${pathname === link.href
+                    ? 'text-green-500'
+                    : 'text-gray-700'
+                    }`}
                 >
                   {link.label}
                   {pathname === link.href && (
@@ -102,13 +103,14 @@ const Navbar = () => {
               </button>
 
               {/* Account */}
-              <Link
-                href="/account"
+              <button
+                onClick={() => setIsSignInOpen(true)}
                 className="hidden sm:flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-all shadow-md"
               >
                 <User className="w-5 h-5" />
                 <span className="text-sm font-semibold hidden lg:block">Sign In</span>
-              </Link>
+              </button>
+
 
               {/* Mobile Menu Button */}
               <button
@@ -149,25 +151,27 @@ const Navbar = () => {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${
-                      pathname === link.href
-                        ? 'text-green-500 bg-gradient-to-r from-purple-50 to-green-50'
-                        : 'text-gray-700 hover:bg-purple-50 hover:text-green-500'
-                    }`}
+                    className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${pathname === link.href
+                      ? 'text-green-500 bg-gradient-to-r from-purple-50 to-green-50'
+                      : 'text-gray-700 hover:bg-purple-50 hover:text-green-500'
+                      }`}
                   >
                     {link.label}
                   </Link>
                 ))}
-                
+
                 {/* Mobile Account Link */}
-                <Link
-                  href="/account"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="sm:hidden flex items-center space-x-3 px-4 py-3 text-base font-semibold text-white bg-green-500 hover:bg-green-600 transition-all rounded-full"
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    setIsSignInOpen(true);
+                  }}
+                  className="sm:hidden flex items-center space-x-3 px-4 py-3 text-base font-semibold text-white bg-green-500 hover:bg-green-600 transition-all rounded-full w-full"
                 >
                   <User className="w-5 h-5" />
                   <span>Account / Sign In</span>
-                </Link>
+                </button>
+
               </div>
             </div>
           )}
@@ -176,6 +180,11 @@ const Navbar = () => {
 
       {/* Cart Sidebar */}
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      {/* Sign In Modal */}
+      <SignInModal
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+      />
     </>
   );
 };

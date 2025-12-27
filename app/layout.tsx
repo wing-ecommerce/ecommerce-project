@@ -1,4 +1,3 @@
-
 "use client";
 import "./globals.css";
 import Navbar from "../components/layout/Navbar";
@@ -12,20 +11,18 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
 
-  const hideLayout = pathname === "/checkout";
+  // Hide layout for checkout and all admin routes
+  const hideLayout = pathname === "/checkout" || pathname.startsWith("/admin");
 
   return (
     <html lang="en">
       <body>
         {!hideLayout && <Navbar />}
 
-        <main className="min-h-screen">
-          {children}
-        </main>
+        <main className="min-h-screen">{children}</main>
 
         {!hideLayout && <Footer />}
       </body>
     </html>
   );
 }
-

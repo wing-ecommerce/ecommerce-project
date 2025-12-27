@@ -30,7 +30,6 @@ export default function ProductDetail() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('M');
-  const [selectedColor, setSelectedColor] = useState('');
   const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
@@ -42,7 +41,6 @@ export default function ProductDetail() {
         
         if (foundProduct) {
           setProduct(foundProduct);
-          setSelectedColor(foundProduct.colors[0] || '');
           setSelectedImage(foundProduct.image);
           // Get similar products from same category
           const similar = data.products
@@ -59,41 +57,6 @@ export default function ProductDetail() {
 
     fetchProducts();
   }, [slug]);
-
-  const getColorHex = (colorName: string): string => {
-    const colorMap: { [key: string]: string } = {
-      'White': 'ffffff',
-      'Black': '000000',
-      'Blue': '3b82f6',
-      'Light Blue': '93c5fd',
-      'Dark Blue': '1e40af',
-      'Navy': '1e3a8a',
-      'Red': 'ef4444',
-      'Pink': 'ec4899',
-      'Green': '10b981',
-      'Gray': '6b7280',
-      'Light Gray': 'e5e7eb',
-      'Yellow': 'fbbf24',
-      'Beige': 'f5f5dc',
-      'Brown': '92400e',
-      'Burgundy': '881337',
-      'Emerald': '059669',
-      'Mint': '6ee7b7',
-      'Lime': '84cc16',
-      'Camel': 'c2b280',
-      'Floral Blue': '60a5fa',
-      'Floral Pink': 'f9a8d4',
-      'Floral Green': '86efac',
-      'Red Floral': 'fca5a5',
-      'Blue Floral': '93c5fd',
-      'Navy/White': '3b82f6',
-      'Black/White': '000000',
-      'Red/White': 'ef4444',
-      'Medium Blue': '2563eb',
-    };
-    
-    return colorMap[colorName] || 'e5e7eb';
-  };
 
   // Get the photos to display as thumbnails
   const getThumbnailPhotos = () => {
@@ -210,30 +173,6 @@ export default function ProductDetail() {
                 <p className="text-red-600 font-semibold">Out of Stock</p>
               </div>
             )}
-
-            {/* Color Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-gray-800">Color</span>
-                <span className="text-sm text-gray-600">{selectedColor}</span>
-              </div>
-              <div className="flex gap-3">
-                {product.colors.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={`w-10 h-10 rounded-full border-3 transition-all duration-200 ${
-                      selectedColor === color
-                        ? 'border-green-500 shadow-md ring-2 ring-green-200'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    style={{ backgroundColor: `#${getColorHex(color)}` }}
-                    aria-label={color}
-                    title={color}
-                  />
-                ))}
-              </div>
-            </div>
 
             {/* Size Selector */}
             <div>

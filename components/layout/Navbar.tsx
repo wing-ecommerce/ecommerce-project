@@ -33,17 +33,14 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="bg-gradient-to-r from-purple-50 via-white to-green-50 shadow-sm sticky top-0 z-50 backdrop-blur-sm bg-opacity-95">
+      <nav className="shadow-sm sticky top-0 z-50 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 lg:h-20">
             {/* Logo */}
             <div className="shrink-0">
               <Link href="/" className="flex items-center space-x-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-xl">M</span>
-                </div>
-                <span className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-600 to-green-500 bg-clip-text text-transparent hidden sm:block">
-                  MyApp
+                <span className="text-xl lg:text-2xl font-bold text-green-500">
+                  TeeSpace
                 </span>
               </Link>
             </div>
@@ -86,11 +83,6 @@ const Navbar = () => {
 
             {/* Right Side Icons */}
             <div className="flex items-center space-x-4">
-              {/* Mobile Search Icon */}
-              <button className="md:hidden p-2 text-gray-700 hover:text-green-500 transition-colors">
-                <Search className="w-5 h-5" />
-              </button>
-
               {/* Cart */}
               <button
                 onClick={() => setIsCartOpen(true)}

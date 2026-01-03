@@ -1,18 +1,60 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ProductCard from '../product/ProductCard';
 import { Product } from '@/types/product';
 
 interface BestSellingProps {
   title?: string;
-  products: Product[];
-  onAddToCart?: (slug: string) => void;
+  limit?: number;
 }
 
 export default function BestSellingSection({ 
-  title = "Best Selling Products", 
-  products,
-  onAddToCart 
+  title = "Best Selling Products",
+  limit = 8
 }: BestSellingProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBestSellingProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        const data = await response.json();
+        
+        const bestSelling = data
+          .filter((p: Product) => p.inStock)
+          .slice(0, limit);
+        
+        setProducts(bestSelling);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching best selling products:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchBestSellingProducts();
+  }, [limit]);
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+            <p className="mt-4 text-gray-600">Loading products...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-16 bg-gray-50">
       <div className="max-w-7xl mx-auto px-6">
@@ -31,8 +73,7 @@ export default function BestSellingSection({
           {products.map((product) => (
             <ProductCard 
               key={product.id} 
-              product={product} 
-              onAddToCart={onAddToCart}
+              product={product}
             />
           ))}
         </div>

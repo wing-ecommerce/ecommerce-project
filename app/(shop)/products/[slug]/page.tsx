@@ -4,49 +4,43 @@ import { useState, useEffect } from 'react';
 import { ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  category: string;
-  price: number;
-  originalPrice: number;
-  discount: number;
-  image: string;
-  additionalPhotos?: string[];
-  description: string;
-  rating: number;
-  inStock: boolean;
-  colors: string[];
-  sizes: string[];
-}
+import { Product } from '@/types/product';
+import { useCartStore } from '@/store/cart.store';
 
 export default function ProductDetail() {
   const params = useParams();
   const slug = params.slug as string;
-  
+  const { addItem } = useCartStore();
+
   const [product, setProduct] = useState<Product | null>(null);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSize, setSelectedSize] = useState('M');
+  const [selectedSize, setSelectedSize] = useState('');
   const [selectedImage, setSelectedImage] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProduct = async () => {
       try {
         const response = await fetch('/api/products');
         const data = await response.json();
-        const foundProduct = data.products.find((p: Product) => p.slug === slug);
+        
+        const foundProduct = data.find((p: Product) => p.slug === slug);
         
         if (foundProduct) {
           setProduct(foundProduct);
           setSelectedImage(foundProduct.image);
-          // Get similar products from same category
-          const similar = data.products
-            .filter((p: Product) => p.category === foundProduct.category && p.slug !== foundProduct.slug)
+          
+          if (foundProduct.sizes.length > 0) {
+            setSelectedSize(foundProduct.sizes[0]);
+          }
+          
+          const similar = data
+            .filter((p: Product) => 
+              p.categoryId === foundProduct.categoryId && 
+              p.slug !== foundProduct.slug
+            )
             .slice(0, 4);
-          setAllProducts(similar);
+          setSimilarProducts(similar);
         }
         setLoading(false);
       } catch (error) {
@@ -55,20 +49,26 @@ export default function ProductDetail() {
       }
     };
 
-    fetchProducts();
+    fetchProduct();
   }, [slug]);
 
-  // Get the photos to display as thumbnails
   const getThumbnailPhotos = () => {
     if (!product) return [];
     
-    // If additionalPhotos exists and has items, use them
+    const allPhotos = [product.image];
     if (product.additionalPhotos && product.additionalPhotos.length > 0) {
-      return product.additionalPhotos;
+      allPhotos.push(...product.additionalPhotos);
     }
     
-    // Otherwise, return only the main image
-    return [product.image];
+    return allPhotos;
+  };
+
+  // Handle Add to Cart with size
+  const handleAddToCart = () => {
+    if (!product || !product.inStock) return;
+    
+    // Add item with selected size
+    addItem(product, selectedSize || undefined);
   };
 
   if (loading) {
@@ -84,8 +84,8 @@ export default function ProductDetail() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Product Not Found</h2>
-          <Link href="/" className="text-green-600 hover:underline">
-            Return to Home
+          <Link href="/products" className="text-green-600 hover:underline">
+            Return to Products
           </Link>
         </div>
       </div>
@@ -100,16 +100,17 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
           {/* Left: Images */}
           <div className="order-2 lg:order-1 space-y-4">
-            {/* Main Image */}
             <div className="bg-gray-50 rounded-xl overflow-hidden shadow-sm max-w-md mx-auto">
               <img
                 src={selectedImage}
                 alt={product.name}
                 className="w-full object-cover aspect-[3/4]"
+                onError={(e) => {
+                  e.currentTarget.src = 'https://via.placeholder.com/400x600?text=No+Image';
+                }}
               />
             </div>
 
-            {/* Thumbnails */}
             <div className={`grid gap-2 max-w-md mx-auto ${
               thumbnailPhotos.length === 1 ? 'grid-cols-1' : 'grid-cols-4'
             }`}>
@@ -127,6 +128,9 @@ export default function ProductDetail() {
                     src={photo}
                     alt={`Thumbnail ${i + 1}`}
                     className="w-full aspect-square object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image';
+                    }}
                   />
                 </button>
               ))}
@@ -135,17 +139,14 @@ export default function ProductDetail() {
 
           {/* Right: Product Info */}
           <div className="order-1 lg:order-2 space-y-7">
-            {/* Breadcrumb */}
             <nav className="text-sm text-gray-500">
               <Link href="/" className="hover:text-gray-700">Home</Link> / 
               <Link href="/products" className="hover:text-gray-700"> Products</Link> / 
               <span className="text-gray-900 font-medium"> {product.name}</span>
             </nav>
 
-            {/* Title */}
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">{product.name}</h1>
 
-            {/* Price */}
             <div className="flex items-center gap-4">
               <div className="text-3xl lg:text-4xl font-bold text-green-600">
                 ${product.price.toFixed(2)}
@@ -162,12 +163,10 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Category */}
             <p className="text-sm uppercase tracking-wide text-gray-600 font-medium">
-              {product.category} COLLECTION
+              {product.category.name} COLLECTION
             </p>
 
-            {/* Stock Status */}
             {!product.inStock && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <p className="text-red-600 font-semibold">Out of Stock</p>
@@ -175,30 +174,36 @@ export default function ProductDetail() {
             )}
 
             {/* Size Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="font-medium text-gray-800">Size</span>
+            {product.sizes.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-medium text-gray-800">
+                    Size: <span className="text-green-600">{selectedSize}</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-6 gap-3">
+                  {product.sizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      disabled={!product.inStock}
+                      className={`py-2.5 rounded-lg border-2 text-sm font-medium transition ${
+                        selectedSize === size
+                          ? 'border-green-500 bg-green-50 text-green-700'
+                          : 'border-gray-300 hover:border-gray-500'
+                      } ${!product.inStock ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-6 gap-3">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={`py-2.5 rounded-lg border-2 text-sm font-medium transition ${
-                      selectedSize === size
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-300 hover:border-gray-500'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
+            )}
 
-            {/* Action Buttons */}
+            {/* Action Button */}
             <div>
               <button 
+                onClick={handleAddToCart}
                 disabled={!product.inStock}
                 className={`w-full py-3.5 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
                   product.inStock
@@ -215,7 +220,7 @@ export default function ProductDetail() {
             <div className="space-y-6 pt-6 border-t border-gray-200 text-gray-700">
               <div>
                 <h3 className="font-semibold text-lg mb-2">Product Details</h3>
-                <p className="text-sm leading-relaxed">
+                <p className="text-sm leading-relaxed whitespace-pre-line">
                   {product.description}
                 </p>
               </div>
@@ -240,17 +245,20 @@ export default function ProductDetail() {
         </div>
 
         {/* Similar Products */}
-        {allProducts.length > 0 && (
+        {similarProducts.length > 0 && (
           <section className="mt-20 lg:mt-28">
             <h2 className="text-2xl lg:text-3xl font-bold text-center mb-10">Similar Products</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8">
-              {allProducts.map((item) => (
+              {similarProducts.map((item) => (
                 <Link href={`/products/${item.slug}`} key={item.id} className="group">
                   <div className="bg-gray-50 rounded-2xl overflow-hidden shadow hover:shadow-lg transition">
                     <img
                       src={item.image}
                       alt={item.name}
                       className="w-full aspect-[3/4] object-cover group-hover:scale-105 transition"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/400x600?text=No+Image';
+                      }}
                     />
                     <div className="p-4 text-center">
                       <p className="text-sm text-gray-600 line-clamp-2 mb-2">{item.name}</p>

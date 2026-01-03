@@ -1,35 +1,11 @@
 import Link from 'next/link';
-import { ShoppingCart } from 'lucide-react';
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  category: string;
-  price: number;
-  originalPrice: number;
-  discount: number;
-  image: string;
-  description: string;
-  rating: number;
-  inStock: boolean;
-  colors: string[];
-  sizes: string[];
-}
+import { Product } from '@/types/product';
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart?: (slug: string) => void;
 }
 
-export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (onAddToCart) {
-      onAddToCart(product.slug);
-    }
-  };
-
+export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/products/${product.slug}`}
@@ -41,6 +17,10 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           src={product.image}
           alt={product.name}
           className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
+          onError={(e) => {
+            e.currentTarget.src =
+              'https://via.placeholder.com/400x600?text=No+Image';
+          }}
         />
         {product.discount > 0 && (
           <span className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
@@ -57,14 +37,14 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
       {/* Product Info */}
       <div className="p-6">
         <span className="text-xs text-green-600 font-semibold uppercase tracking-wide">
-          {product.category}
+          {product.category.name}
         </span>
-        <h3 className="text-lg font-bold mt-2 mb-4">
+        <h3 className="text-lg font-bold mt-2 mb-4 line-clamp-2">
           {product.name}
         </h3>
 
         {/* Price */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3">
           <span className="text-2xl font-bold text-green-600">
             ${product.price.toFixed(2)}
           </span>
@@ -75,19 +55,12 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
           )}
         </div>
 
-        {/* Add to Cart Button */}
-        <button
-          disabled={!product.inStock}
-          onClick={handleAddToCart}
-          className={`w-full py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition ${
-            product.inStock
-              ? 'bg-green-500 text-white hover:bg-green-600'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-        >
-          <ShoppingCart className="w-5 h-5" />
-          {product.inStock ? 'Add to Cart' : 'Out of Stock'}
-        </button>
+        {/* View Details Text */}
+        <div className="mt-4 text-center">
+          <span className="text-sm text-gray-600 group-hover:text-green-600 transition font-medium">
+            View Details →
+          </span>
+        </div>
       </div>
     </Link>
   );

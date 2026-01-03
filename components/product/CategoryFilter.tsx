@@ -1,7 +1,9 @@
+import { Category } from '../../types/product';
+
 interface CategoryFilterProps {
-  categories: string[];
+  categories: Category[];
   activeCategory: string;
-  onCategoryChange: (category: string) => void;
+  onCategoryChange: (categoryId: string) => void;
 }
 
 export default function CategoryFilter({ 
@@ -15,15 +17,15 @@ export default function CategoryFilter({
         <div className="flex flex-wrap justify-center gap-4">
           {categories.map((category) => (
             <button
-              key={category}
-              onClick={() => onCategoryChange(category)}
+              key={category.id}
+              onClick={() => onCategoryChange(category.id)}
               className={`px-6 py-2.5 rounded-full font-medium transition shadow-md ${
-                activeCategory === category
+                activeCategory === category.id
                   ? 'bg-green-500 text-white'
                   : 'bg-white text-gray-700 hover:bg-green-100'
               }`}
             >
-              {category}
+              {category.name}
             </button>
           ))}
         </div>

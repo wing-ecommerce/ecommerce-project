@@ -6,15 +6,17 @@ import { useState } from 'react';
 import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
 import CartSidebar from '../cart/CartSideBar';
 import SignInModal from '../ui/SignInModal';
+import { useCartStore } from '@/store/cart.store';
 
 const Navbar = () => {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSignInOpen, setIsSignInOpen] = useState(false);
 
-  // Mock cart count - replace with your actual cart store
-  const cartCount = 3;
+  // Get cart state from Zustand store
+  const { isOpen: isCartOpen, openCart, closeCart, getItemCount } = useCartStore();
+  const cartCount = getItemCount();
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -29,7 +31,6 @@ const Navbar = () => {
       console.log('Searching for:', searchQuery);
     }
   };
-  const [isSignInOpen, setIsSignInOpen] = useState(false);
 
   return (
     <>
@@ -51,10 +52,9 @@ const Navbar = () => {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`text-sm font-semibold transition-all hover:text-green-500 relative ${pathname === link.href
-                    ? 'text-green-500'
-                    : 'text-gray-700'
-                    }`}
+                  className={`text-sm font-semibold transition-all hover:text-green-500 relative ${
+                    pathname === link.href ? 'text-green-500' : 'text-gray-700'
+                  }`}
                 >
                   {link.label}
                   {pathname === link.href && (
@@ -85,13 +85,15 @@ const Navbar = () => {
             <div className="flex items-center space-x-4">
               {/* Cart */}
               <button
-                onClick={() => setIsCartOpen(true)}
+                onClick={openCart}
                 className="relative p-2 text-gray-700 hover:text-green-500 transition-colors"
               >
                 <ShoppingCart className="w-6 h-6" />
-                <span className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
-                  {cartCount}
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                    {cartCount}
+                  </span>
+                )}
               </button>
 
               {/* Account */}
@@ -100,9 +102,10 @@ const Navbar = () => {
                 className="hidden sm:flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-all shadow-md"
               >
                 <User className="w-5 h-5" />
-                <span className="text-sm font-semibold hidden lg:block">Sign In</span>
+                <span className="text-sm font-semibold hidden lg:block">
+                  Sign In
+                </span>
               </button>
-
 
               {/* Mobile Menu Button */}
               <button
@@ -143,10 +146,11 @@ const Navbar = () => {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${pathname === link.href
-                      ? 'text-green-500 bg-gradient-to-r from-purple-50 to-green-50'
-                      : 'text-gray-700 hover:bg-purple-50 hover:text-green-500'
-                      }`}
+                    className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${
+                      pathname === link.href
+                        ? 'text-green-500 bg-gradient-to-r from-purple-50 to-green-50'
+                        : 'text-gray-700 hover:bg-purple-50 hover:text-green-500'
+                    }`}
                   >
                     {link.label}
                   </Link>
@@ -163,7 +167,6 @@ const Navbar = () => {
                   <User className="w-5 h-5" />
                   <span>Account / Sign In</span>
                 </button>
-
               </div>
             </div>
           )}
@@ -171,12 +174,10 @@ const Navbar = () => {
       </nav>
 
       {/* Cart Sidebar */}
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <CartSidebar isOpen={isCartOpen} onClose={closeCart} />
+
       {/* Sign In Modal */}
-      <SignInModal
-        isOpen={isSignInOpen}
-        onClose={() => setIsSignInOpen(false)}
-      />
+      <SignInModal isOpen={isSignInOpen} onClose={() => setIsSignInOpen(false)} />
     </>
   );
 };

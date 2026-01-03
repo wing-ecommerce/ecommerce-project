@@ -1,61 +1,70 @@
 'use client';
+
 import { useState, useEffect } from 'react';
 import CategoryFilter from '../../../components/product/CategoryFilter';
 import ProductsSection from '../../../components/product/ProductsSection';
-import { Product } from '@/types/product';
+import { Product, Category } from '../../../types/product';
 
-const CATEGORIES = ['All', 'Skirt', 'T-Shirt', 'Jeans', 'Dress'];
-
-export default function Home() {
+export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // Fetch products from API route
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/products');
-        const data = await response.json();
-        setProducts(data.products);
-        setFilteredProducts(data.products);
+        const productsResponse = await fetch('/api/products');
+        const productsData = await productsResponse.json();
+
+        const categoriesResponse = await fetch('/api/categories');
+        const categoriesData = await categoriesResponse.json();
+
+        setProducts(productsData);
+        setFilteredProducts(productsData);
+        setCategories(categoriesData);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching data:', error);
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
-  // Filter products by category
-  const handleCategoryFilter = (category: string) => {
-    setActiveCategory(category);
-    if (category === 'All') {
+  const handleCategoryFilter = (categoryId: string) => {
+    setActiveCategory(categoryId);
+    if (categoryId === 'All') {
       setFilteredProducts(products);
     } else {
-      const filtered = products.filter(product => product.category === category);
+      const filtered = products.filter(
+        (product) => product.categoryId === categoryId
+      );
       setFilteredProducts(filtered);
     }
   };
 
-  // Handle add to cart
   const handleAddToCart = (slug: string) => {
+    // Handled by ProductCard
     console.log('Add to cart:', slug);
-    // Add your cart logic here
   };
+
+  const categoryOptions = [
+    { id: 'All', name: 'All', slug: 'all' },
+    ...categories,
+  ];
 
   return (
     <>
-      <CategoryFilter 
-        categories={CATEGORIES}
+      <CategoryFilter
+        categories={categoryOptions}
         activeCategory={activeCategory}
         onCategoryChange={handleCategoryFilter}
       />
-      
-      <ProductsSection 
+
+      <ProductsSection
         products={filteredProducts}
         loading={loading}
         activeCategory={activeCategory}

@@ -1,28 +1,12 @@
 import ProductCard from './ProductCard';
-
-interface Product {
-  id: number;
-  name: string;
-  slug: string;
-  category: string;
-  price: number;
-  originalPrice: number;
-  discount: number;
-  image: string;
-  description: string;
-  rating: number;
-  inStock: boolean;
-  colors: string[];
-  sizes: string[];
-}
+import { Product } from '@/types/product';
 
 interface ProductGridProps {
   products: Product[];
   loading: boolean;
-  onAddToCart?: (slug: string) => void;
 }
 
-export default function ProductGrid({ products, loading, onAddToCart }: ProductGridProps) {
+export default function ProductGrid({ products, loading }: ProductGridProps) {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -45,8 +29,7 @@ export default function ProductGrid({ products, loading, onAddToCart }: ProductG
       {products.map((product) => (
         <ProductCard 
           key={product.id} 
-          product={product} 
-          onAddToCart={onAddToCart}
+          product={product}
         />
       ))}
     </div>

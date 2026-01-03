@@ -1,32 +1,26 @@
 'use client';
-import HeroSection from "../../components/home/HeroSection";
-import BestSellingSection from "../../components/home/BestSelling";
-import CTASection from "../../components/home/CTASection";
-import LoadingSection from "../../components/home/LoadingSection";
-import { useRandomProducts } from "../../hooks/UseRandomProducts";
+
+import HeroSection from '@/components/home/HeroSection';
+import BestSellingSection from '@/components/home/BestSelling';
+import CTASection from '@/components/home/CTASection';
+import { useCartStore } from '../../store/cart.store';
 
 export default function HomePage() {
-  const { products, loading } = useRandomProducts(4);
+  const { items } = useCartStore();
 
-  // Handle add to cart
   const handleAddToCart = (slug: string) => {
+    // This is handled by the ProductCard component
     console.log('Add to cart:', slug);
-    // Add your cart logic here
   };
 
   return (
     <>
       <HeroSection />
-      {loading ? (
-        <LoadingSection />
-      ) : (
-        <BestSellingSection 
-          title="Best Selling Products"
-          products={products}
-          onAddToCart={handleAddToCart}
-        />
-      )}
-      
+      <BestSellingSection
+        title="Best Selling Products"
+        limit={4}
+        onAddToCart={handleAddToCart}
+      />
       <CTASection />
     </>
   );

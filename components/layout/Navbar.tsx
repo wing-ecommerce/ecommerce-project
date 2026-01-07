@@ -1,35 +1,48 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
-import CartSidebar from '../cart/CartSideBar';
-import SignInModal from '../ui/SignInModal';
-import { useCartStore } from '@/store/cart.store';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { Search, ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
+import CartSidebar from "../cart/CartSideBar";
+import SignInModal from "../ui/SignInModal";
+import { useCartStore } from "@/store/cart.store";
 
 const Navbar = () => {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSignInOpen, setIsSignInOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Get cart state from Zustand store
-  const { isOpen: isCartOpen, openCart, closeCart, getItemCount } = useCartStore();
+  const {
+    isOpen: isCartOpen,
+    openCart,
+    closeCart,
+    getItemCount,
+  } = useCartStore();
   const cartCount = getItemCount();
 
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/products', label: 'Products' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
+    { href: "/", label: "Home" },
+    { href: "/products", label: "Products" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
   ];
 
   const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
-      console.log('Searching for:', searchQuery);
+      console.log("Searching for:", searchQuery);
     }
+  };
+
+  const handleSignOut = async () => {
+    await signOut({ callbackUrl: "/" });
+    setShowUserMenu(false);
   };
 
   return (
@@ -53,7 +66,7 @@ const Navbar = () => {
                   key={link.href}
                   href={link.href}
                   className={`text-sm font-semibold transition-all hover:text-green-500 relative ${
-                    pathname === link.href ? 'text-green-500' : 'text-gray-700'
+                    pathname === link.href ? "text-green-500" : "text-gray-700"
                   }`}
                 >
                   {link.label}
@@ -96,16 +109,79 @@ const Navbar = () => {
                 )}
               </button>
 
-              {/* Account */}
-              <button
-                onClick={() => setIsSignInOpen(true)}
-                className="hidden sm:flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-all shadow-md"
-              >
-                <User className="w-5 h-5" />
-                <span className="text-sm font-semibold hidden lg:block">
-                  Sign In
-                </span>
-              </button>
+              {/* Account - Show if logged in, otherwise show Sign In button */}
+              {status === "loading" ? (
+                <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+              ) : session?.user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center space-x-2 hover:opacity-80 transition"
+                  >
+                    {session.user.profilePicture ? (
+                      <Image
+                        src={session.user.profilePicture}
+                        alt={session.user.firstName || "User"}
+                        width={40}
+                        height={40}
+                        className="rounded-full border-2 border-green-500"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+                        {session.user.firstName?.[0] || "U"}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* User Dropdown Menu */}
+                  {showUserMenu && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowUserMenu(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-20 py-2">
+                        <div className="px-4 py-3 border-b border-gray-200">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {session.user.firstName} {session.user.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {session.user.email}
+                          </p>
+                        </div>
+
+                        {/* My Account Link */}
+                        <Link
+                          href="/account"
+                          onClick={() => setShowUserMenu(false)}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <User className="w-4 h-4" />
+                          My Account
+                        </Link>
+
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsSignInOpen(true)}
+                  className="hidden sm:flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-all shadow-md"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="text-sm font-semibold hidden lg:block">
+                    Sign In
+                  </span>
+                </button>
+              )}
 
               {/* Mobile Menu Button */}
               <button
@@ -148,8 +224,8 @@ const Navbar = () => {
                     onClick={() => setIsMenuOpen(false)}
                     className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${
                       pathname === link.href
-                        ? 'text-green-500 bg-gradient-to-r from-purple-50 to-green-50'
-                        : 'text-gray-700 hover:bg-purple-50 hover:text-green-500'
+                        ? "text-green-500 bg-gradient-to-r from-purple-50 to-green-50"
+                        : "text-gray-700 hover:bg-purple-50 hover:text-green-500"
                     }`}
                   >
                     {link.label}
@@ -157,16 +233,18 @@ const Navbar = () => {
                 ))}
 
                 {/* Mobile Account Link */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsSignInOpen(true);
-                  }}
-                  className="sm:hidden flex items-center space-x-3 px-4 py-3 text-base font-semibold text-white bg-green-500 hover:bg-green-600 transition-all rounded-full w-full"
-                >
-                  <User className="w-5 h-5" />
-                  <span>Account / Sign In</span>
-                </button>
+                {!session?.user && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsSignInOpen(true);
+                    }}
+                    className="sm:hidden flex items-center space-x-3 px-4 py-3 text-base font-semibold text-white bg-green-500 hover:bg-green-600 transition-all rounded-full w-full"
+                  >
+                    <User className="w-5 h-5" />
+                    <span>Account / Sign In</span>
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -177,7 +255,10 @@ const Navbar = () => {
       <CartSidebar isOpen={isCartOpen} onClose={closeCart} />
 
       {/* Sign In Modal */}
-      <SignInModal isOpen={isSignInOpen} onClose={() => setIsSignInOpen(false)} />
+      <SignInModal
+        isOpen={isSignInOpen}
+        onClose={() => setIsSignInOpen(false)}
+      />
     </>
   );
 };

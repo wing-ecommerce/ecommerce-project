@@ -1,7 +1,9 @@
 "use client";
+
 import "./globals.css";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import SessionProvider from "@/components/providers/SessionProvider";
 import { usePathname } from "next/navigation";
 
 export default function RootLayout({
@@ -17,11 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {!hideLayout && <Navbar />}
-
-        <main className="min-h-screen">{children}</main>
-
-        {!hideLayout && <Footer />}
+        <SessionProvider>
+          {!hideLayout && <Navbar />}
+          <main className="min-h-screen">{children}</main>
+          {!hideLayout && <Footer />}
+        </SessionProvider>
       </body>
     </html>
   );

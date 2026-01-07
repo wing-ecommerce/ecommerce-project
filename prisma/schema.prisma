@@ -7,6 +7,20 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  googleId      String?   @unique
+  firstName     String?
+  lastName      String?
+  profilePicture String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([googleId])
+}
+
 model Product {
   id               Int      @id @default(autoincrement())
   name             String
@@ -15,10 +29,10 @@ model Product {
   originalPrice    Float
   discount         Int
   image            String
-  additionalPhotos String[] // Postgres text[]
+  additionalPhotos String[]
   description      String
   inStock          Boolean  @default(true)
-  sizes            String[] // ["XS", "S", "M", "L"]
+  sizes            String[]
   categoryId       String
   category         Category @relation(fields: [categoryId], references: [id])
   createdAt        DateTime @default(now())
@@ -26,9 +40,9 @@ model Product {
 }
 
 model Category {
-  id       String   @id
+  id       String    @id
   name     String
-  slug     String   @unique
+  slug     String    @unique
 
   products Product[]
 }

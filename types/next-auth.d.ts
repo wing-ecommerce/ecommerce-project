@@ -9,6 +9,9 @@ declare module 'next-auth' {
       firstName: string;
       lastName: string;
       profilePicture: string;
+      gender?: string;
+      dateOfBirth?: string;
+      phone?: string;
     };
   }
 
@@ -19,15 +22,8 @@ declare module 'next-auth' {
     firstName?: string;
     lastName?: string;
     profilePicture?: string;
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    googleId?: string;
-    firstName?: string;
-    lastName?: string;
-    profilePicture?: string;
+    gender?: string;
+    dateOfBirth?: Date;
+    phone?: string;
   }
 }

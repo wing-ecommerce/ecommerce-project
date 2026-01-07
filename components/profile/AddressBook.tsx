@@ -1,180 +1,497 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { MapPin, Plus, Trash2, Check } from "lucide-react";
 
-type AddressForm = {
+type Address = {
+  id: string;
   fullName: string;
   email: string;
   phone: string;
   address: string;
   city: string;
-  country: string;
+  isDefault: boolean;
 };
 
 export default function AddressBook() {
-  const [addresses, setAddresses] = useState<AddressForm[]>([
-    {
+  const { data: session } = useSession();
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    isDefault: false,
+  });
+
+  // Fetch addresses
+  const fetchAddresses = async () => {
+    try {
+      const response = await fetch("/api/user/addresses");
+      if (response.ok) {
+        const data = await response.json();
+        setAddresses(data);
+      }
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchAddresses();
+    }
+  }, [session]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setForm({ ...form, [name]: checked });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+  };
+
+  const handleAddNew = () => {
+    setIsAdding(true);
+    setEditingId(null);
+    setForm({
+      fullName: session?.user?.firstName + " " + session?.user?.lastName || "",
+      email: session?.user?.email || "",
+      phone: "",
+      address: "",
+      city: "",
+      isDefault: addresses.length === 0, // First address is default
+    });
+  };
+
+  const handleEdit = (address: Address) => {
+    setEditingId(address.id);
+    setIsAdding(false);
+    setForm({
+      fullName: address.fullName,
+      email: address.email,
+      phone: address.phone,
+      address: address.address,
+      city: address.city,
+      isDefault: address.isDefault,
+    });
+  };
+
+  const handleCancel = () => {
+    setIsAdding(false);
+    setEditingId(null);
+    setForm({
       fullName: "",
       email: "",
       phone: "",
       address: "",
       city: "",
-      country: "",
-    },
-  ]);
-
-  const handleChange = (
-    index: number,
-    field: keyof AddressForm,
-    value: string
-  ) => {
-    const updated = [...addresses];
-    updated[index][field] = value;
-    setAddresses(updated);
+      isDefault: false,
+    });
   };
 
-  const addAddress = () => {
-    setAddresses([
-      ...addresses,
-      {
-        fullName: "",
-        email: "",
-        phone: "",
-        address: "",
-        city: "",
-        country: "",
-      },
-    ]);
-  };
-
-  const handleSubmit = (e: React.FormEvent, index: number) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Saved Address:", addresses[index]);
+
+    try {
+      const url = editingId
+        ? `/api/user/addresses/${editingId}`
+        : "/api/user/addresses";
+      const method = editingId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (response.ok) {
+        await fetchAddresses();
+        handleCancel();
+        alert(
+          editingId
+            ? "Address updated successfully!"
+            : "Address added successfully!"
+        );
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error saving address:", error);
+      alert("Failed to save address");
+    }
   };
 
-  const removeAddress = (index: number) => {
-    setAddresses(addresses.filter((_, i) => i !== index));
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this address?")) return;
+
+    try {
+      const response = await fetch(`/api/user/addresses/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        await fetchAddresses();
+        alert("Address deleted successfully!");
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      alert("Failed to delete address");
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10">
-      {addresses.map((item, index) => (
-        <form
-          key={index}
-          onSubmit={(e) => handleSubmit(e, index)}
-          className="max-w-5xl mx-auto bg-white rounded-2xl p-8"
+    <div className="space-y-6">
+      {/* Existing Addresses */}
+      {addresses.map((address) => (
+        <div
+          key={address.id}
+          className={`bg-white border-2 rounded-xl p-6 ${
+            address.isDefault ? "border-green-500" : "border-gray-200"
+          }`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-semibold">Address {index + 1}</h2>
+          {editingId === address.id ? (
+            // Edit Form
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={form.fullName}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
 
-            <div className="flex gap-2">
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Email <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                    placeholder="+855 xxx xxx xxx"
+                    className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    City/Province <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="city"
+                    value={form.city}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Select city/province</option>
+                    <option value="Phnom Penh">Phnom Penh</option>
+                    <option value="Siem Reap">Siem Reap</option>
+                    <option value="Battambang">Battambang</option>
+                    <option value="Sihanoukville">Sihanoukville</option>
+                    <option value="Kampong Cham">Kampong Cham</option>
+                    <option value="Kandal">Kandal</option>
+                    <option value="Prey Veng">Prey Veng</option>
+                    <option value="Takeo">Takeo</option>
+                    <option value="Kampot">Kampot</option>
+                    <option value="Banteay Meanchey">Banteay Meanchey</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium mb-2">
+                    Street Address <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={form.address}
+                    onChange={handleChange}
+                    required
+                    placeholder="Street, house number, building"
+                    className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name="isDefault"
+                      checked={form.isDefault}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-sm font-medium">
+                      Set as default address
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white"
+                >
+                  Save Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-5 py-2 rounded-lg border hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            // Display Mode
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <MapPin className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{address.fullName}</h3>
+                    {address.isDefault && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full mt-1">
+                        <Check className="w-3 h-3" />
+                        Default Address
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(address)}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(address.id)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-sm text-gray-600">
+                <p>{address.address}</p>
+                <p>{address.city}, Cambodia</p>
+                <p>Phone: {address.phone}</p>
+                <p>Email: {address.email}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* Add New Address Form */}
+      {isAdding && (
+        <div className="bg-white border-2 border-purple-300 rounded-xl p-6">
+          <h3 className="text-lg font-semibold mb-4">Add New Address</h3>
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={form.fullName}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                  placeholder="+855 xxx xxx xxx"
+                  className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  City/Province <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Select city/province</option>
+                  <option value="Phnom Penh">Phnom Penh</option>
+                  <option value="Siem Reap">Siem Reap</option>
+                  <option value="Battambang">Battambang</option>
+                  <option value="Sihanoukville">Sihanoukville</option>
+                  <option value="Kampong Cham">Kampong Cham</option>
+                  <option value="Kandal">Kandal</option>
+                  <option value="Prey Veng">Prey Veng</option>
+                  <option value="Takeo">Takeo</option>
+                  <option value="Kampot">Kampot</option>
+                  <option value="Banteay Meanchey">Banteay Meanchey</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-2">
+                  Street Address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  required
+                  placeholder="Street, house number, building"
+                  className="w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="isDefault"
+                    checked={form.isDefault}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                  />
+                  <span className="text-sm font-medium">
+                    Set as default address
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
               <button
                 type="submit"
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-purple-500 to-green-500 text-white hover:from-purple-600 hover:to-green-600 transition-all shadow-md"
+                className="px-5 py-2 rounded-lg  bg-green-500 hover:bg-green-600 text-white"
               >
-                Save
+                Add Address
               </button>
               <button
                 type="button"
-                onClick={() => removeAddress(index)}
-                className="px-5 py-2 rounded-full border text-red-500 hover:bg-red-50 transition"
+                onClick={handleCancel}
+                className="px-5 py-2 rounded-lg border hover:bg-gray-50 transition"
               >
-                Remove
+                Cancel
               </button>
             </div>
-          </div>
+          </form>
+        </div>
+      )}
 
-          {/* Form Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                placeholder="Enter full name"
-                value={item.fullName}
-                onChange={(e) =>
-                  handleChange(index, "fullName", e.target.value)
-                }
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Email</label>
-              <input
-                type="email"
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                placeholder="Enter email"
-                value={item.email}
-                onChange={(e) => handleChange(index, "email", e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                placeholder="+855 xxx xxx xxx"
-                value={item.phone}
-                onChange={(e) => handleChange(index, "phone", e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Country</label>
-              <select
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                value={item.country}
-                onChange={(e) => handleChange(index, "country", e.target.value)}
-              >
-                <option value="">Select country</option>
-                <option>Cambodia</option>
-                <option>Thailand</option>
-                <option>United States</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">Address</label>
-              <input
-                type="text"
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                placeholder="Street, house number"
-                value={item.address}
-                onChange={(e) => handleChange(index, "address", e.target.value)}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2">City</label>
-              <input
-                type="text"
-                className="input w-full px-4 py-3 rounded-lg border focus:outline-none"
-                placeholder="Enter city"
-                value={item.city}
-                onChange={(e) => handleChange(index, "city", e.target.value)}
-              />
-            </div>
-          </div>
-        </form>
-      ))}
-
-      {/* Add Address Button */}
-      <div className="max-w-5xl mx-auto flex justify-end">
+      {/* Add New Address Button */}
+      {!isAdding && !editingId && (
         <button
           type="button"
-          onClick={addAddress}
-          className="px-6 py-3 rounded-full border font-semibold hover:bg-gray-100 transition"
+          onClick={handleAddNew}
+          className="w-full py-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition flex items-center justify-center gap-2 text-gray-600 hover:text-purple-600 font-medium"
         >
-          + Add Address
+          <Plus className="w-5 h-5" />
+          Add New Address
         </button>
-      </div>
+      )}
+
+      {/* Empty State */}
+      {addresses.length === 0 && !isAdding && (
+        <div className="text-center py-12">
+          <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-600 mb-4">No addresses saved yet</p>
+          <button
+            onClick={handleAddNew}
+            className="px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white"
+          >
+            Add Your First Address
+          </button>
+        </div>
+      )}
     </div>
   );
 }

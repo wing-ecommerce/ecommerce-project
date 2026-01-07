@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from "react";
-import ProfileInfo from "../../components/profile/ProfileInfo";
-import OrderHistory from "../../components/profile/OrderHistory";
-import AddressBook from "../../components/profile/AddressBook";
+import ProfileInfo from "../../../components/profile/ProfileInfo";
+import OrderHistory from "../../../components/profile/OrderHistory";
+import AddressBook from "../../../components/profile/AddressBook";
 
 const page = () => {
   const [active, setActive] = useState("personal");
@@ -61,8 +61,8 @@ const MenuItem = ({
     className={`w-full text-left px-4 py-3 rounded-lg font-medium transition
       ${
         active
-          ? "bg-gradient-to-r from-purple-500 to-green-500 text-white"
-          : "hover:bg-gray-100"
+          ? "bg-green-500 hover:bg-green-600 text-white"
+          : "hover:bg-green-100"
       }
     `}
   >

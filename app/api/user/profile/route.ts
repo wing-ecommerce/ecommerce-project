@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth.config';
 import { prisma } from '@/lib/prisma';
 
+// GET user profile
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -19,6 +20,9 @@ export async function GET(request: NextRequest) {
         firstName: true,
         lastName: true,
         profilePicture: true,
+        gender: true,
+        dateOfBirth: true,
+        phone: true,
         createdAt: true,
       },
     });
@@ -32,6 +36,53 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching user profile:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Update user profile
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { firstName, lastName, gender, dateOfBirth, phone } = body;
+
+    // Update user in database
+    const updatedUser = await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        gender: gender || undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        phone: phone || undefined,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        profilePicture: true,
+        gender: true,
+        dateOfBirth: true,
+        phone: true,
+      },
+    });
+
+    return NextResponse.json({
+      message: 'Profile updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return NextResponse.json(
+      { error: 'Failed to update profile' },
       { status: 500 }
     );
   }

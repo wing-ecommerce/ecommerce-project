@@ -55,8 +55,8 @@ const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
       >
         <div className="flex flex-col h-full">
           {/* Cart Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-green-50">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-green-500 bg-clip-text text-transparent">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-green-50">
+            <h2 className="text-2xl font-bold text-gray-700">
               Shopping Cart
             </h2>
             <button

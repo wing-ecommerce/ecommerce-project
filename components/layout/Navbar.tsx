@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, ShoppingCart, User, Menu, X, LogOut } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
@@ -12,11 +12,12 @@ import { useCartStore } from "@/store/cart.store";
 
 const Navbar = () => {
   const pathname = usePathname();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSignInOpen, setIsSignInOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const {
     isOpen: isCartOpen,
@@ -25,6 +26,11 @@ const Navbar = () => {
     getItemCount,
   } = useCartStore();
   const cartCount = getItemCount();
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -71,7 +77,7 @@ const Navbar = () => {
                 >
                   {link.label}
                   {pathname === link.href && (
-                    <span className="absolute -bottom-6 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-green-500 rounded-full"></span>
+                    <span className="absolute -bottom-6 left-0 right-0 h-1 bg-green-500 rounded-full"></span>
                   )}
                 </Link>
               ))}
@@ -87,9 +93,9 @@ const Navbar = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={handleSearch}
-                    className="w-full pl-10 pr-4 py-2 border-2 border-purple-100 rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent bg-white shadow-sm transition-all"
+                    className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent bg-white shadow-sm transition-all"
                   />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 </div>
               </div>
             </div>
@@ -102,16 +108,16 @@ const Navbar = () => {
                 className="relative p-2 text-gray-700 hover:text-green-500 transition-colors"
               >
                 <ShoppingCart className="w-6 h-6" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
+                {mounted && cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-md">
                     {cartCount}
                   </span>
                 )}
               </button>
 
               {/* Account - Show if logged in, otherwise show Sign In button */}
-              {status === "loading" ? (
-                <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+              {!mounted ? (
+                <div className="w-10 h-10" />
               ) : session?.user ? (
                 <div className="relative">
                   <button
@@ -199,7 +205,7 @@ const Navbar = () => {
 
           {/* Mobile Menu */}
           {isMenuOpen && (
-            <div className="lg:hidden py-4 border-t border-purple-100">
+            <div className="lg:hidden py-4 border-t border-gray-200">
               {/* Mobile Search */}
               <div className="mb-4 px-2">
                 <div className="relative">
@@ -209,9 +215,9 @@ const Navbar = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={handleSearch}
-                    className="w-full pl-10 pr-4 py-2 border-2 border-purple-100 rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent bg-white"
+                    className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent bg-white"
                   />
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 w-5 h-5" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 </div>
               </div>
 
@@ -224,8 +230,8 @@ const Navbar = () => {
                     onClick={() => setIsMenuOpen(false)}
                     className={`block px-4 py-3 text-base font-semibold transition-all rounded-full ${
                       pathname === link.href
-                        ? "text-green-500 bg-gradient-to-r from-purple-50 to-green-50"
-                        : "text-gray-700 hover:bg-purple-50 hover:text-green-500"
+                        ? "text-green-500 bg-green-50"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-green-500"
                     }`}
                   >
                     {link.label}
@@ -233,7 +239,7 @@ const Navbar = () => {
                 ))}
 
                 {/* Mobile Account Link */}
-                {!session?.user && (
+                {mounted && !session?.user && (
                   <button
                     onClick={() => {
                       setIsMenuOpen(false);

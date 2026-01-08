@@ -113,7 +113,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       getTax: () => {
-        return get().getSubtotal() * 0.1; // 10% tax
+        return get().getSubtotal() * 0.0; // 0% tax
       },
 
       getTotal: () => {

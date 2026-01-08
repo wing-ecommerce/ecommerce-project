@@ -51,7 +51,7 @@ export default function CheckoutPage() {
     isDefault: false,
   });
 
-  const shipping = 5.00;
+  const shipping = 0.0;
   const subtotal = getSubtotal();
   const tax = getTax();
   const total = subtotal + shipping + tax;

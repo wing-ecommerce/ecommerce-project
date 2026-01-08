@@ -1,359 +1,280 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ShoppingCart, MapPin, Phone, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { useCartStore } from '@/store/cart.store';
+import ContactInformation from '@/components/checkout/ContactInformation';
+import SavedAddresses from '@/components/checkout/SavedAddresses';
+import NewAddressForm from '@/components/checkout/NewAddressForm';
+import OrderSummary from '@/components/checkout/OrderSummary';
+import PaymentModal from '@/components/checkout/PaymentModal';
+import EmptyCart from '@/components/checkout/EmptyCart';
 
-// Mock KHQR Payment Component
-const MockKHQRPayment = ({ amount }: { amount: number }) => {
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <svg
-        width="220"
-        height="220"
-        viewBox="0 0 220 220"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <rect width="220" height="220" fill="white" />
-        <g transform="translate(10, 10)">
-          {/* Simple QR-like pattern for demo */}
-          {Array.from({ length: 20 }).map((_, i) =>
-            Array.from({ length: 20 }).map((_, j) => (
-              <rect
-                key={`${i}-${j}`}
-                x={i * 10}
-                y={j * 10}
-                width="10"
-                height="10"
-                fill={Math.random() > 0.5 ? 'black' : 'white'}
-              />
-            ))
-          )}
-        </g>
-      </svg>
+interface Address {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  isDefault: boolean;
+}
 
-      <p className="text-sm text-red-500 font-medium text-center">
-        Demo KHQR (Mock Payment)
-      </p>
-    </div>
-  );
-};
+export default function CheckoutPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { items, getSubtotal, getTax, getTotal } = useCartStore();
 
-const CheckoutPage = () => {
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
   const [formData, setFormData] = useState({
     email: '',
     phone: '',
-    firstName: '',
-    lastName: '',
+    fullName: '',
     address: '',
     city: '',
-    country: 'Cambodia',
   });
 
-  const [showPayment, setShowPayment] = useState(false);
+  const [newAddressForm, setNewAddressForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    isDefault: false,
+  });
 
-  // Mock cart items
-  const cartItems = [
-    {
-      id: 1,
-      name: 'Wireless Headphones',
-      price: 79.99,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop'
-    },
-    {
-      id: 2,
-      name: 'Smart Watch',
-      price: 199.99,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop'
-    }
-  ];
-
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 10.00;
-  const tax = subtotal * 0.1;
+  const shipping = 5.00;
+  const subtotal = getSubtotal();
+  const tax = getTax();
   const total = subtotal + shipping + tax;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/');
+    }
+  }, [status, router]);
+
+  // Fetch user addresses
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!session?.user) return;
+
+      try {
+        const response = await fetch('/api/user/addresses');
+        if (response.ok) {
+          const data = await response.json();
+          setAddresses(data);
+
+          const defaultAddress = data.find((addr: Address) => addr.isDefault);
+          const addressToSelect = defaultAddress || data[0];
+
+          if (addressToSelect) {
+            setSelectedAddressId(addressToSelect.id);
+            setFormData({
+              email: addressToSelect.email,
+              phone: addressToSelect.phone,
+              fullName: addressToSelect.fullName,
+              address: addressToSelect.address,
+              city: addressToSelect.city,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching addresses:', error);
+      } finally {
+        setIsLoadingAddresses(false);
+      }
+    };
+
+    fetchAddresses();
+  }, [session]);
+
+  // Prefill form with user data if no addresses
+  useEffect(() => {
+    if (session?.user && addresses.length === 0 && !isLoadingAddresses) {
+      setFormData({
+        email: session.user.email || '',
+        phone: '',
+        fullName: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim(),
+        address: '',
+        city: '',
+      });
+      setNewAddressForm({
+        fullName: `${session.user.firstName || ''} ${session.user.lastName || ''}`.trim(),
+        email: session.user.email || '',
+        phone: '',
+        address: '',
+        city: '',
+        isDefault: true,
+      });
+    }
+  }, [session, addresses, isLoadingAddresses]);
+
+  const handleAddressSelect = (addressId: string) => {
+    setSelectedAddressId(addressId);
+    const selectedAddress = addresses.find((addr) => addr.id === addressId);
+    if (selectedAddress) {
+      setFormData({
+        email: selectedAddress.email,
+        phone: selectedAddress.phone,
+        fullName: selectedAddress.fullName,
+        address: selectedAddress.address,
+        city: selectedAddress.city,
+      });
+    }
+    setShowNewAddressForm(false);
+  };
+
+  const handleNewAddressInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setNewAddressForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setNewAddressForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSaveNewAddress = async () => {
+    try {
+      const response = await fetch('/api/user/addresses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAddressForm),
+      });
+
+      if (response.ok) {
+        const newAddress = await response.json();
+        setAddresses([...addresses, newAddress]);
+        setSelectedAddressId(newAddress.id);
+        setFormData({
+          email: newAddress.email,
+          phone: newAddress.phone,
+          fullName: newAddress.fullName,
+          address: newAddress.address,
+          city: newAddress.city,
+        });
+        setShowNewAddressForm(false);
+        alert('Address saved successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving address:', error);
+      alert('Failed to save address');
+    }
   };
 
   const handlePayNow = () => {
+    if (!formData.fullName || !formData.address || !formData.city || !formData.phone) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (items.length === 0) {
+      alert('Your cart is empty');
+      return;
+    }
+
     console.log('Proceeding to payment:', formData);
     setShowPayment(true);
   };
 
-  if (showPayment) {
+  // Loading state
+  if (status === 'loading' || isLoadingAddresses) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
-          {/* Back Button */}
-          <button
-            onClick={() => setShowPayment(false)}
-            className="flex items-center gap-2 text-gray-600 hover:text-green-600 mb-6 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-semibold">Back to Checkout</span>
-          </button>
-
-          {/* Payment Card */}
-          <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                Complete Your Payment
-              </h1>
-              <p className="text-gray-600">Scan the QR code with your banking app</p>
-            </div>
-
-            {/* QR Code */}
-            <div className="flex justify-center mb-8">
-              <MockKHQRPayment amount={total} />
-            </div>
-
-            {/* Payment Details */}
-            <div className="bg-gray-50 rounded-xl p-6 mb-6 border border-gray-200">
-              <div className="space-y-3">
-                <div className="flex justify-between text-gray-600">
-                  <span>Amount to Pay:</span>
-                  <span className="font-semibold text-gray-800">${total.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Merchant:</span>
-                  <span className="font-semibold text-gray-800">Liikaa Store</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Location:</span>
-                  <span className="font-semibold text-gray-800">Phnom Penh, Cambodia</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="font-semibold text-green-900 mb-2">Payment Instructions:</h3>
-              <ol className="text-sm text-green-800 space-y-1 list-decimal list-inside">
-                <li>Open your mobile banking app</li>
-                <li>Select "Scan QR" or "KHQR Payment"</li>
-                <li>Scan the QR code above</li>
-                <li>Confirm the payment amount</li>
-                <li>Complete the transaction</li>
-              </ol>
-            </div>
-          </div>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
+  // Not authenticated
+  if (!session) {
+    return null;
+  }
+
+  // Empty cart
+  if (items.length === 0) {
+    return <EmptyCart />;
+  }
+
+  // Payment view
+  if (showPayment) {
+    return <PaymentModal total={total} onBack={() => setShowPayment(false)} />;
+  }
+
+  // Main checkout view
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            Checkout
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Checkout</h1>
           <p className="text-gray-600">Complete your order</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Side - Forms */}
-          <div className="lg:col-span-2">
-            <div className="space-y-6">
-              {/* Contact Information */}
-              <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800">Contact Information</h2>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="sokdara@example.com"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="+855 12 345 678"
-                    />
-                  </div>
-                </div>
-              </div>
+          <div className="lg:col-span-2 space-y-6">
+            {/* Contact Information */}
+            <ContactInformation email={formData.email} />
 
-              {/* Shipping Address */}
-              <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-800">Shipping Address</h2>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                        placeholder="Sok"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Last Name
-                      </label>
-                      <input
-                        type="text"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                        placeholder="Dara"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Street Address
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="Street 123, Sangkat BKK1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      City
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
-                      placeholder="Phnom Penh"
-                    />
-                  </div>
-                </div>
-              </div>
+            {/* Saved Addresses */}
+            <SavedAddresses
+              addresses={addresses}
+              selectedAddressId={selectedAddressId}
+              onAddressSelect={handleAddressSelect}
+              onAddNewAddress={() => setShowNewAddressForm(true)}
+            />
 
-              {/* Submit Button - Mobile */}
-              <button
-                onClick={handlePayNow}
-                className="lg:hidden w-full py-4 bg-green-500 text-white font-bold text-lg rounded-full hover:bg-green-600 transition-all shadow-lg hover:shadow-xl"
-              >
-                Pay Now - ${total.toFixed(2)}
-              </button>
-            </div>
+            {/* New Address Form */}
+            {(showNewAddressForm || addresses.length === 0) && (
+              <NewAddressForm
+                formData={newAddressForm}
+                onChange={handleNewAddressInputChange}
+                onSave={handleSaveNewAddress}
+                hasExistingAddresses={addresses.length > 0}
+              />
+            )}
+
+            {/* Mobile Pay Button */}
+            <button
+              onClick={handlePayNow}
+              className="lg:hidden w-full py-4 bg-green-500 text-white font-bold text-lg rounded-full hover:bg-green-600 transition-all shadow-lg"
+            >
+              Pay Now - ${total.toFixed(2)}
+            </button>
           </div>
 
           {/* Right Side - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200 sticky top-8 hover:shadow-lg transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                  <ShoppingCart className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-800">Order Summary</h2>
-              </div>
-
-              {/* Cart Items */}
-              <div className="space-y-4 mb-6">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <div className="relative">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                      <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                        {item.quantity}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-800 text-sm">{item.name}</h3>
-                      <p className="text-green-600 font-bold text-sm mt-1">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Pricing Breakdown */}
-              <div className="space-y-3 py-4 border-t border-gray-200">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Shipping</span>
-                  <span className="font-medium">${shipping.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold text-gray-800 pt-3 border-t-2 border-gray-300">
-                  <span>Total</span>
-                  <span className="text-green-600">${total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Submit Button - Desktop */}
-              <button
-                onClick={handlePayNow}
-                className="hidden lg:block w-full py-4 bg-green-500 text-white font-bold text-lg rounded-full hover:bg-green-600 transition-all shadow-lg hover:shadow-xl mt-6"
-              >
-                Pay Now
-              </button>
-
-              {/* Security Badge */}
-              <div className="mt-6 text-center">
-                <p className="text-xs text-gray-500">
-                  🔒 Secure payment via KHQR
-                </p>
-              </div>
-            </div>
+            <OrderSummary
+              items={items}
+              subtotal={subtotal}
+              shipping={shipping}
+              tax={tax}
+              total={total}
+              onCheckout={handlePayNow}
+            />
           </div>
         </div>
 
-        {/* Back Button at Bottom */}
+        {/* Back Button */}
         <div className="mt-8 text-center">
           <Link
             href="/products"
@@ -366,6 +287,4 @@ const CheckoutPage = () => {
       </div>
     </div>
   );
-};
-
-export default CheckoutPage;
+}

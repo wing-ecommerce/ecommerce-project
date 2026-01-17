@@ -44,7 +44,3 @@ next-env.d.ts
 /app/generated/prisma
 /prisma/migrations/*
 !/prisma/migrations/.gitkeep
-
-
-package.json
-
